@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="az">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ağıllı Dərs Cədvəli — Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --pr50: #fce8ea;
+            --pr100: #f9d2d5;
+            --pr200: #f4a4ab;
+            --pr300: #ee7781;
+            --pr400: #e94957;
+            --pr500: #e31c2d;
+            --pr600: #b61624;
+            --pr700: #88111b;
+            --pr800: #5b0b12;
+            --pr900: #2d0609;
+            --pr950: #200406;
+            --hd50: #eff9eb;
+            --hd100: #def4d7;
+            --hd200: #bee8b0;
+            --hd300: #9ddd88;
+            --hd400: #7dd161;
+            --hd500: #5cc639;
+            --hd600: #4a9e2e;
+            --hd700: #377722;
+            --hd800: #254f17;
+            --hd900: #12280b;
+            --hd950: #0d1c08;
+            --fb50: #edf7f8;
+            --fb100: #dbf0f0;
+            --fb200: #b6e0e2;
+            --fb300: #92d1d3;
+            --fb400: #6dc2c5;
+            --fb500: #49b3b6;
+            --fb600: #3a8f92;
+            --fb700: #2c6b6d;
+            --fb800: #1d4749;
+            --fb900: #0f2424;
+            --fb950: #0a191a;
+            --ce50: #edf3f7;
+            --ce100: #dce8ef;
+            --ce200: #b8d1e0;
+            --ce300: #95b9d0;
+            --ce400: #71a2c1;
+            --ce500: #4e8bb1;
+            --ce600: #3e6f8e;
+            --ce700: #2f536a;
+            --ce800: #1f3847;
+            --ce900: #101c23;
+            --ce950: #0b1319;
+            --on50: #ecf1f9;
+            --on100: #d9e3f2;
+            --on200: #b3c8e6;
+            --on300: #8cacd9;
+            --on400: #6690cc;
+            --on500: #4075bf;
+            --on600: #335d99;
+            --on700: #264673;
+            --on800: #192f4d;
+            --on900: #0d1726;
+            --on950: #09101b;
+        }
+
+        * {
+            font-family: 'Inter', sans-serif;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--on950);
+            color: #e2e8f0;
+            margin: 0;
+        }
+
+        .cell-split {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cell-split::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 141%;
+            height: 1px;
+            background: rgba(113, 162, 193, 0.25);
+            transform-origin: top left;
+            transform: rotate(28deg);
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .cell-even-zone {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            z-index: 1;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 3px;
+        }
+
+        .cell-odd-zone {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            z-index: 1;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 3px;
+        }
+
+        .drop-target-even {
+            background: rgba(78, 139, 177, 0.18) !important;
+        }
+
+        .drop-target-odd {
+            background: rgba(92, 198, 57, 0.15) !important;
+        }
+
+        .drop-target-both {
+            background: linear-gradient(135deg, rgba(78, 139, 177, 0.12), rgba(92, 198, 57, 0.12)) !important;
+        }
+
+        .lesson-card {
+            cursor: grab;
+            transition: all .2s ease;
+        }
+
+        .lesson-card:active {
+            cursor: grabbing;
+        }
+
+        .lesson-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .placed-pill {
+            animation: fadeIn .3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(.85)
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1)
+            }
+        }
+
+        .blocked-x {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--pr400);
+            pointer-events: none;
+            z-index: 10;
+            opacity: .45;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--on700);
+            border-radius: 3px;
+        }
+
+        .teacher-active {
+            box-shadow: 0 0 0 2px rgba(78, 139, 177, 0.6), 0 0 20px rgba(78, 139, 177, 0.15);
+        }
+
+        .toast {
+            animation: slideIn .3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .modal-overlay {
+            animation: fadeOverlay .2s ease;
+        }
+
+        @keyframes fadeOverlay {
+            from {
+                opacity: 0
+            }
+
+            to {
+                opacity: 1
+            }
+        }
+
+        .modal-content {
+            animation: scaleIn .25s ease;
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(.95)
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1)
+            }
+        }
+
+        .tab-active {
+            border-bottom: 2px solid var(--ce500);
+            color: #e2e8f0;
+        }
+
+        /* Mobile sidebar */
+        .sidebar-overlay {
+            display: none;
+        }
+
+        @media(max-width:768px) {
+            .sidebar-overlay.open {
+                display: block;
+                position: fixed;
+                inset: 0;
+                background: rgba(9, 16, 27, 0.7);
+                z-index: 40;
+            }
+
+            .app-sidebar {
+                position: fixed;
+                left: -300px;
+                top: 0;
+                bottom: 0;
+                z-index: 50;
+                width: 280px;
+                transition: left .3s ease;
+            }
+
+            .app-sidebar.open {
+                left: 0;
+            }
+
+            .grid-main {
+                padding: 12px !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useCallback, useRef, useEffect, useMemo } = React;
+
+        const DAYS = [
+            { id: 0, name: 'Bazar ertəsi', short: 'B.e.' },
+            { id: 1, name: 'Çərşənbə axşamı', short: 'Ç.a.' },
+            { id: 2, name: 'Çərşənbə', short: 'Çər.' },
+            { id: 3, name: 'Cümə axşamı', short: 'C.a.' },
+            { id: 4, name: 'Cümə', short: 'Cümə' },
+        ];
+        const SLOTS = [
+            { id: 0, shift: 'Səhər', num: 'I', time: '08:00 – 09:20' },
+            { id: 1, shift: 'Səhər', num: 'II', time: '09:35 – 10:55' },
+            { id: 2, shift: 'Səhər', num: 'III', time: '11:10 – 12:30' },
+            { id: 3, shift: 'Günorta', num: 'IV', time: '12:45 – 14:05' },
+            { id: 4, shift: 'Günorta', num: 'V', time: '14:20 – 15:40' },
+            { id: 5, shift: 'Günorta', num: 'VI', time: '15:55 – 17:15' },
+        ];
+        const COLOR_PALETTE = ['#4e8bb1', '#5cc639', '#49b3b6', '#e94957', '#6690cc', '#7dd161', '#ee7781', '#71a2c1', '#9ddd88', '#4075bf'];
+        const INIT_TEACHERS = [
+            { id: 1, name: 'Prof. Əliyev', department: 'Riyaziyyat', color: '#4e8bb1', blockedDays: [4], availableFrom: null, availableTo: null },
+            { id: 2, name: 'Dos. Həsənova', department: 'Fizika', color: '#5cc639', blockedDays: [0, 3], availableFrom: '09:00', availableTo: '15:00' },
+            { id: 3, name: 'Müəl. Məmmədov', department: 'Kompüter elmləri', color: '#49b3b6', blockedDays: [], availableFrom: '12:45', availableTo: '18:00' },
+            { id: 4, name: 'Prof. Quliyeva', department: 'Verilənlər bazası', color: '#e94957', blockedDays: [2], availableFrom: '09:00', availableTo: '16:30' },
+        ];
+        const INIT_LESSONS = [
+            { id: 'L1', teacherId: 1, subject: 'Riyaziyyat', group: '758ITS', parity: 'both', totalHours: 60 },
+            { id: 'L2', teacherId: 1, subject: 'Riyaziyyat', group: '758ITS', parity: 'both', totalHours: 60 },
+            { id: 'L3', teacherId: 2, subject: 'Fizika', group: '758ITS', parity: 'both', totalHours: 45 },
+            { id: 'L4', teacherId: 2, subject: 'Fizika', group: '758ITS', parity: 'even', totalHours: 45 },
+            { id: 'L5', teacherId: 3, subject: 'Proqramlaşdırma', group: '758ITS', parity: 'both', totalHours: 75 },
+            { id: 'L6', teacherId: 3, subject: 'Proqramlaşdırma', group: '758ITS', parity: 'both', totalHours: 75 },
+            { id: 'L7', teacherId: 3, subject: 'Proqramlaşdırma', group: '758ITS', parity: 'odd', totalHours: 75 },
+            { id: 'L8', teacherId: 4, subject: 'VB', group: '700KM', parity: 'both', totalHours: 60 },
+            { id: 'L9', teacherId: 4, subject: 'VB', group: '700KM', parity: 'both', totalHours: 60 },
+            { id: 'L10', teacherId: 1, subject: 'Statistika', group: '700KM', parity: 'both', totalHours: 30 },
+        ];
+
+        function timeToMin(t) { const [h, m] = t.split(':').map(Number); return h * 60 + m; }
+        function isTeacherAvailable(teacher, dayId, slotId) {
+            if (teacher.blockedDays.includes(dayId)) return false;
+            if (!teacher.availableFrom || !teacher.availableTo) return true;
+            const s = SLOTS[slotId], [sh, sm] = s.time.split(' – ')[0].split(':').map(Number), [eh, em] = s.time.split(' – ')[1].split(':').map(Number);
+            return sh * 60 + sm >= timeToMin(teacher.availableFrom) && eh * 60 + em <= timeToMin(teacher.availableTo);
+        }
+        function parityConflicts(p1, p2) { return p1 === 'both' || p2 === 'both' || p1 === p2; }
+        let _nextId = 100; function genId() { return 'L' + (++_nextId); }
+        let _nextTId = 10; function genTId() { return ++_nextTId; }
+
+        /* ── Small Components ── */
+        function ParityBadge({ parity, small = false }) {
+            const c = {
+                both: { l: 'Hər həftə', bg: 'background:rgba(78,139,177,0.2)', dot: 'background:#4e8bb1' },
+                even: { l: 'Alt həftə', bg: 'background:rgba(64,117,191,0.2)', dot: 'background:#6690cc' },
+                odd: { l: 'Üst həftə', bg: 'background:rgba(92,198,57,0.2)', dot: 'background:#5cc639' }
+            }[parity];
+            return <span className={`inline-flex items-center gap-1 rounded-full ${small ? 'text-[8px] px-1 py-0' : 'text-[10px] px-1.5 py-0.5'} font-medium`}
+                style={{ [c.bg.split(':')[0]]: c.bg.split(':')[1], color: '#d9e3f2' }}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: c.dot.split(':')[1] }} />{c.l}</span>;
+        }
+        function Toast({ msg, type }) {
+            const st = type === 'error' ? { bg: 'rgba(227,28,45,0.15)', border: 'rgba(233,73,87,0.3)', color: '#f4a4ab' }
+                : type === 'success' ? { bg: 'rgba(92,198,57,0.15)', border: 'rgba(125,209,97,0.3)', color: '#bee8b0' }
+                    : { bg: 'rgba(78,139,177,0.15)', border: 'rgba(113,162,193,0.3)', color: '#b8d1e0' };
+            return <div className="toast fixed top-4 right-4 z-[200] px-4 py-2.5 rounded-xl text-sm font-medium shadow-2xl backdrop-blur-xl"
+                style={{ background: st.bg, borderColor: st.border, borderWidth: 1, borderStyle: 'solid', color: st.color }}>{msg}</div>;
+        }
+
+        /* ── Modal ── */
+        function Modal({ open, onClose, title, children, wide = false }) {
+            if (!open) return null;
+            return <div className="modal-overlay fixed inset-0 z-[100] flex items-center justify-center" style={{ background: 'rgba(9,16,27,0.7)' }} onClick={onClose}>
+                <div className={`modal-content rounded-2xl shadow-2xl ${wide ? 'w-[700px] max-w-[95vw]' : 'w-[480px] max-w-[95vw]'} max-h-[90vh] overflow-y-auto`}
+                    style={{ background: '#0d1726', border: '1px solid rgba(113,162,193,0.1)' }} onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center justify-between px-5 py-3.5 sm:px-6 sm:py-4" style={{ borderBottom: '1px solid rgba(113,162,193,0.08)' }}>
+                        <h2 className="text-base font-bold">{title}</h2>
+                        <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center transition" style={{ background: 'rgba(113,162,193,0.08)', color: '#95b9d0' }}>✕</button>
+                    </div>
+                    <div className="px-5 py-4 sm:px-6 sm:py-5">{children}</div>
+                </div>
+            </div >;
+        }
+
+        /* ── Teacher Form ── */
+        function TeacherForm({ teacher, onSave, onClose }) {
+            const isEdit = !!teacher;
+            const [name, setName] = useState(teacher?.name || '');
+            const [dept, setDept] = useState(teacher?.department || '');
+            const [color, setColor] = useState(teacher?.color || COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)]);
+            const [blocked, setBlocked] = useState(teacher?.blockedDays || []);
+            const [useTimeRange, setUseTimeRange] = useState(!!(teacher?.availableFrom));
+            const [from, setFrom] = useState(teacher?.availableFrom || '09:00');
+            const [to, setTo] = useState(teacher?.availableTo || '18:00');
+            const toggleDay = (d) => setBlocked(p => p.includes(d) ? p.filter(x => x !== d) : [...p, d]);
+            const handleSave = () => { if (!name.trim()) return; onSave({ id: teacher?.id || genTId(), name: name.trim(), department: dept.trim(), color, blockedDays: blocked, availableFrom: useTimeRange ? from : null, availableTo: useTimeRange ? to : null }); onClose(); };
+            const ic = "w-full rounded-lg px-3 py-2 text-sm placeholder-opacity-40 focus:outline-none transition";
+            const iStyle = { background: '#192f4d', border: '1px solid rgba(113,162,193,0.15)', color: '#d9e3f2' };
+            return <div className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div><label className="block text-xs mb-1.5" style={{ color: '#71a2c1' }}>Ad, Soyad *</label><input className={ic} style={iStyle} value={name} onChange={e => setName(e.target.value)} placeholder="Dos. Nəsibov" /></div>
+                    <div><label className="block text-xs mb-1.5" style={{ color: '#71a2c1' }}>Kafedra</label><input className={ic} style={iStyle} value={dept} onChange={e => setDept(e.target.value)} placeholder="Elektronika" /></div>
+                </div>
+                <div><label className="block text-xs mb-1.5" style={{ color: '#71a2c1' }}>Rəng</label>
+                    <div className="flex gap-2 flex-wrap">{COLOR_PALETTE.map(c => <button key={c} className={`w-7 h-7 rounded-lg border-2 transition ${color === c ? 'border-white scale-110' : 'border-transparent hover:border-white/30'}`} style={{ background: c }} onClick={() => setColor(c)} />)}</div>
+                </div>
+                <div><label className="block text-xs mb-1.5" style={{ color: '#71a2c1' }}>Bloklanan günlər</label>
+                    <div className="flex gap-2 flex-wrap">{DAYS.map(d => <button key={d.id} className="flex-1 min-w-[50px] py-2 rounded-lg text-xs font-semibold transition" style={blocked.includes(d.id) ? { background: 'rgba(227,28,45,0.15)', border: '1px solid rgba(233,73,87,0.3)', color: '#f4a4ab' } : { background: '#192f4d', border: '1px solid rgba(113,162,193,0.1)', color: '#71a2c1' }} onClick={() => toggleDay(d.id)}>{d.short}{blocked.includes(d.id) && <span className="block text-[9px] mt-0.5">✕</span>}</button>)}</div>
+                </div>
+                <div>
+                    <div className="flex items-center gap-2 mb-2">
+                        <button className="w-4 h-4 rounded border flex items-center justify-center transition" style={useTimeRange ? { background: '#4e8bb1', borderColor: '#4e8bb1' } : { borderColor: '#2f536a' }} onClick={() => setUseTimeRange(!useTimeRange)}>{useTimeRange && <span className="text-[10px] text-white">✓</span>}</button>
+                        <label className="text-xs cursor-pointer" style={{ color: '#95b9d0' }} onClick={() => setUseTimeRange(!useTimeRange)}>Spesifik saat aralığı</label>
+                    </div>
+                    {useTimeRange && <div className="flex items-center gap-3 pl-6"><input type="time" className={ic + " w-32"} style={iStyle} value={from} onChange={e => setFrom(e.target.value)} /><span style={{ color: '#2f536a' }}>–</span><input type="time" className={ic + " w-32"} style={iStyle} value={to} onChange={e => setTo(e.target.value)} /></div>}
+                    {!useTimeRange && <p className="text-[10px] pl-6" style={{ color: '#2f536a' }}>Tam gün mövcuddur</p>}
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                    <button className="px-4 py-2 rounded-lg text-sm transition" style={{ background: 'rgba(113,162,193,0.08)', color: '#95b9d0' }} onClick={onClose}>Ləğv et</button>
+                    <button className="px-5 py-2 rounded-lg text-sm font-semibold transition disabled:opacity-40" style={{ background: '#4e8bb1', color: '#fff' }} disabled={!name.trim()} onClick={handleSave}>{isEdit ? 'Yadda saxla' : 'Əlavə et'}</button>
+                </div>
+            </div>;
+        }
+
+        /* ── Lesson Form ── */
+        function LessonForm({ lesson, teachers, onSave, onClose }) {
+            const isEdit = !!lesson;
+            const [teacherId, setTeacherId] = useState(lesson?.teacherId || teachers[0]?.id || 0);
+            const [subject, setSubject] = useState(lesson?.subject || '');
+            const [group, setGroup] = useState(lesson?.group || '');
+            const [parity, setParity] = useState(lesson?.parity || 'both');
+            const [totalHours, setTotalHours] = useState(lesson?.totalHours || 30);
+            const handleSave = () => { if (!subject.trim() || !group.trim()) return; onSave({ id: lesson?.id || genId(), teacherId: Number(teacherId), subject: subject.trim(), group: group.trim(), parity, totalHours: Number(totalHours) }); onClose(); };
+            const ic = "w-full rounded-lg px-3 py-2 text-sm focus:outline-none transition";
+            const iStyle = { background: '#192f4d', border: '1px solid rgba(113,162,193,0.15)', color: '#d9e3f2' };
+            return <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div><label className="block text-xs mb-1.5" style={{ color: '#71a2c1' }}>Fənn adı *</label><input className={ic} style={iStyle} value={subject} onChange={e => setSubject(e.target.value)} placeholder="Riyaziyyat" /></div>
+                    <div><label className="block text-xs mb-1.5" style={{ color: '#71a2c1' }}>Qrup *</label><input className={ic} style={iStyle} value={group} onChange={e => setGroup(e.target.value)} placeholder="758ITS" /></div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div><label className="block text-xs mb-1.5" style={{ color: '#71a2c1' }}>Müəllim</label><select className={ic} style={iStyle} value={teacherId} onChange={e => setTeacherId(e.target.value)}>{teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
+                    <div><label className="block text-xs mb-1.5" style={{ color: '#71a2c1' }}>Həftə</label><select className={ic} style={iStyle} value={parity} onChange={e => setParity(e.target.value)}><option value="both">Hər həftə</option><option value="even">Alt həftə</option><option value="odd">Üst həftə</option></select></div>
+                    <div><label className="block text-xs mb-1.5" style={{ color: '#71a2c1' }}>Ümumi saat</label><input type="number" className={ic} style={iStyle} value={totalHours} onChange={e => setTotalHours(e.target.value)} min="15" step="15" /></div>
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                    <button className="px-4 py-2 rounded-lg text-sm transition" style={{ background: 'rgba(113,162,193,0.08)', color: '#95b9d0' }} onClick={onClose}>Ləğv et</button>
+                    <button className="px-5 py-2 rounded-lg text-sm font-semibold transition disabled:opacity-40" style={{ background: '#4e8bb1', color: '#fff' }} disabled={!subject.trim() || !group.trim()} onClick={handleSave}>{isEdit ? 'Yadda saxla' : 'Əlavə et'}</button>
+                </div>
+            </div>;
+        }
+
+        /* ── Admin Panel ── */
+        function AdminPanel({ open, onClose, teachers, setTeachers, lessons, setLessons, placements, setPlacements }) {
+            const [tab, setTab] = useState('teachers');
+            const [editTeacher, setEditTeacher] = useState(null);
+            const [editLesson, setEditLesson] = useState(null);
+            const [confirm, setConfirm] = useState(null);
+            const handleSaveTeacher = (t) => { setTeachers(p => { const e = p.find(x => x.id === t.id); return e ? p.map(x => x.id === t.id ? t : x) : [...p, t] }); setEditTeacher(null); };
+            const handleDeleteTeacher = (id) => { setConfirm({ msg: 'Bu müəllim və dərsləri silinəcək. Əminsiniz?', onYes: () => { setTeachers(p => p.filter(x => x.id !== id)); setLessons(p => p.filter(x => x.teacherId !== id)); setPlacements(p => p.filter(pl => { const l = lessons.find(x => x.id === pl.lessonId); return l && l.teacherId !== id; })); setConfirm(null); } }); };
+            const handleSaveLesson = (l) => { setLessons(p => { const e = p.find(x => x.id === l.id); return e ? p.map(x => x.id === l.id ? l : x) : [...p, l] }); setEditLesson(null); };
+            const handleDeleteLesson = (id) => { setConfirm({ msg: 'Bu dərs silinəcək. Əminsiniz?', onYes: () => { setLessons(p => p.filter(x => x.id !== id)); setPlacements(p => p.filter(x => x.lessonId !== id)); setConfirm(null); } }); };
+            if (!open) return null;
+            return <Modal open={open} onClose={onClose} title="⚙️ Admin Panel" wide>
+                {confirm && <div className="fixed inset-0 z-[150] flex items-center justify-center" style={{ background: 'rgba(9,16,27,0.6)' }}>
+                    <div className="rounded-xl p-6 w-[380px] max-w-[90vw] shadow-2xl modal-content" style={{ background: '#0d1726', border: '1px solid rgba(113,162,193,0.1)' }}>
+                        <p className="text-sm mb-5" style={{ color: '#d9e3f2' }}>{confirm.msg}</p>
+                        <div className="flex justify-end gap-2">
+                            <button className="px-4 py-1.5 rounded-lg text-sm" style={{ background: 'rgba(113,162,193,0.08)', color: '#95b9d0' }} onClick={() => setConfirm(null)}>Xeyr</button>
+                            <button className="px-4 py-1.5 rounded-lg text-sm font-semibold" style={{ background: '#e31c2d', color: '#fff' }} onClick={confirm.onYes}>Bəli, Sil</button>
+                        </div>
+                    </div>
+                </div>}
+                <div className="flex gap-6 mb-5 -mt-1" style={{ borderBottom: '1px solid rgba(113,162,193,0.08)' }}>
+                    <button className={`pb-2 text-sm font-semibold transition ${tab === 'teachers' ? 'tab-active' : ''}`} style={tab !== 'teachers' ? { color: '#2f536a' } : {}} onClick={() => setTab('teachers')}>👨‍🏫 Müəllimlər ({teachers.length})</button>
+                    <button className={`pb-2 text-sm font-semibold transition ${tab === 'lessons' ? 'tab-active' : ''}`} style={tab !== 'lessons' ? { color: '#2f536a' } : {}} onClick={() => setTab('lessons')}>📚 Dərslər ({lessons.length})</button>
+                </div>
+                {tab === 'teachers' && <div>{editTeacher !== null ? <TeacherForm teacher={editTeacher.id ? editTeacher : null} onSave={handleSaveTeacher} onClose={() => setEditTeacher(null)} /> : <>
+                    <button className="mb-4 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2" style={{ background: '#4e8bb1', color: '#fff' }} onClick={() => setEditTeacher({})}><span className="text-lg leading-none">+</span> Yeni Müəllim</button>
+                    <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">{teachers.map(t => {
+                        const tC = lessons.filter(l => l.teacherId === t.id).length; return <div key={t.id} className="flex items-center gap-3 p-3 rounded-xl transition group" style={{ background: 'rgba(25,47,77,0.5)', border: '1px solid rgba(113,162,193,0.06)' }}>
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold shrink-0" style={{ background: t.color + '25', color: t.color }}>{t.name.charAt(0)}</div>
+                            <div className="flex-1 min-w-0"><p className="text-sm font-semibold">{t.name}</p>
+                                <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] mt-0.5" style={{ color: '#2f536a' }}><span>{t.department || '—'}</span><span>•</span><span>Bloklı: {t.blockedDays.length > 0 ? t.blockedDays.map(d => DAYS[d].short).join(', ') : 'Yox'}</span><span>•</span><span>{tC} dərs</span></div>
+                            </div>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
+                                <button className="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition" style={{ background: 'rgba(78,139,177,0.15)', color: '#71a2c1' }} onClick={() => setEditTeacher(t)}>✎</button>
+                                <button className="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition" style={{ background: 'rgba(227,28,45,0.12)', color: '#f4a4ab' }} onClick={() => handleDeleteTeacher(t.id)}>🗑</button>
+                            </div>
+                        </div>
+                    })}{teachers.length === 0 && <p className="text-center py-8 text-sm" style={{ color: '#2f536a' }}>Heç bir müəllim yoxdur.</p>}</div></>}</div>}
+                {tab === 'lessons' && <div>{editLesson !== null ? <LessonForm lesson={editLesson.id ? editLesson : null} teachers={teachers} onSave={handleSaveLesson} onClose={() => setEditLesson(null)} /> : <>
+                    <button className="mb-4 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2" style={{ background: '#4e8bb1', color: '#fff' }} onClick={() => setEditLesson({})}><span className="text-lg leading-none">+</span> Yeni Dərs</button>
+                    <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">{lessons.map(l => {
+                        const t = teachers.find(x => x.id === l.teacherId); const isP = placements.some(p => p.lessonId === l.id); return <div key={l.id} className="flex items-center gap-3 p-3 rounded-xl transition group" style={{ background: 'rgba(25,47,77,0.5)', border: '1px solid rgba(113,162,193,0.06)' }}>
+                            <div className="w-2 h-10 rounded-full shrink-0" style={{ background: t?.color || '#666' }} />
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap"><span className="text-sm font-semibold">{l.subject}</span><ParityBadge parity={l.parity} small />{isP && <span className="text-[9px] px-1.5 rounded-full" style={{ background: 'rgba(92,198,57,0.15)', color: '#bee8b0' }}>Yerləşdirilib</span>}</div>
+                                <div className="flex gap-x-3 text-[10px] mt-0.5" style={{ color: '#2f536a' }}><span>{t?.name || '—'}</span><span>•</span><span>{l.group}</span><span>•</span><span>{l.totalHours}s</span></div>
+                            </div>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
+                                <button className="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition" style={{ background: 'rgba(78,139,177,0.15)', color: '#71a2c1' }} onClick={() => setEditLesson(l)}>✎</button>
+                                <button className="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition" style={{ background: 'rgba(227,28,45,0.12)', color: '#f4a4ab' }} onClick={() => handleDeleteLesson(l.id)}>🗑</button>
+                            </div>
+                        </div>
+                    })}{lessons.length === 0 && <p className="text-center py-8 text-sm" style={{ color: '#2f536a' }}>Heç bir dərs yoxdur.</p>}</div></>}</div>}
+            </Modal>;
+        }
+
+        /* ── Grid Cell ── */
+        function GridCell({ dayId, slotId, selectedTeacher, placements, draggingLessonId, lessons, teachers, onDrop, onRemove }) {
+            const [hoverZone, setHoverZone] = useState(null);
+            const t = selectedTeacher;
+            const isBlocked = t ? t.blockedDays.includes(dayId) : false;
+            const isUnavail = t ? !isTeacherAvailable(t, dayId, slotId) : false;
+            const isDisabled = isBlocked || isUnavail;
+            const evenL = placements.filter(p => p.dayId === dayId && p.slotId === slotId && (p.parity === 'even' || p.parity === 'both'));
+            const oddL = placements.filter(p => p.dayId === dayId && p.slotId === slotId && (p.parity === 'odd' || p.parity === 'both'));
+            const canDrop = useCallback(z => {
+                if (!draggingLessonId || isDisabled) return false; const l = lessons.find(x => x.id === draggingLessonId); if (!l) return false;
+                const lt = teachers.find(x => x.id === l.teacherId); if (lt && !isTeacherAvailable(lt, dayId, slotId)) return false;
+                if (l.parity === 'both') return true; if (l.parity === 'even' && z === 'even') return true; if (l.parity === 'odd' && z === 'odd') return true; if (z === 'full') return true; return false;
+            }, [draggingLessonId, isDisabled, dayId, slotId, lessons, teachers]);
+            const onDragOver = (e, z) => { e.preventDefault(); if (canDrop(z)) { e.dataTransfer.dropEffect = 'move'; setHoverZone(z); } };
+            const onDropH = (e, z) => { e.preventDefault(); setHoverZone(null); const id = e.dataTransfer.getData('lessonId'); if (id && canDrop(z)) onDrop(id, dayId, slotId); };
+            const bgS = isBlocked ? 'rgba(45,6,9,0.4)' : isUnavail ? 'rgba(25,47,77,0.2)' : 'rgba(25,47,77,0.4)';
+            const hover = hoverZone === 'even' ? 'drop-target-even' : hoverZone === 'odd' ? 'drop-target-odd' : hoverZone === 'full' ? 'drop-target-both' : '';
+            const pill = (p) => {
+                const l = lessons.find(x => x.id === p.lessonId); const tc = teachers.find(x => x.id === l?.teacherId);
+                if (!l || !tc) return null;
+                return <div key={p.lessonId} className="placed-pill group/p relative flex items-center gap-1 rounded px-1.5 py-0.5 cursor-pointer hover:brightness-125 transition-all"
+                    style={{ background: tc.color + '25', borderLeft: `2px solid ${tc.color}` }} onClick={e => { e.stopPropagation(); onRemove(l.id); }}>
+                    <span className="text-[9px] font-semibold truncate max-w-[80px]">{l.subject}</span>
+                    <span className="text-[8px] truncate" style={{ color: '#71a2c1' }}>{l.group}</span>
+                    <button className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full text-white text-[8px] flex items-center justify-center opacity-0 group-hover/p:opacity-100 transition-opacity"
+                        style={{ background: 'rgba(227,28,45,0.8)' }} onClick={e => { e.stopPropagation(); onRemove(l.id); }}>✕</button>
+                </div>;
+            };
+            return <div className={`cell-split relative w-full h-[76px] rounded-lg ${hover} transition-colors`} style={{ background: bgS, border: '1px solid rgba(113,162,193,0.06)' }}>
+                {isBlocked && <div className="blocked-x select-none"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="4" y1="4" x2="20" y2="20" /><line x1="20" y1="4" x2="4" y2="20" /></svg></div>}
+                {!isBlocked && <>
+                    <div className="cell-even-zone px-1" onDragOver={e => onDragOver(e, 'even')} onDrop={e => onDropH(e, 'even')} onDragLeave={() => setHoverZone(null)}>
+                        {evenL.length > 0 ? <div className="flex flex-col gap-0.5 w-full">{evenL.map(pill)}</div> : <span className="text-[8px] select-none" style={{ color: '#1f3847' }}>alt</span>}
+                    </div>
+                    <div className="cell-odd-zone px-1" onDragOver={e => onDragOver(e, 'odd')} onDrop={e => onDropH(e, 'odd')} onDragLeave={() => setHoverZone(null)}>
+                        {oddL.length > 0 ? <div className="flex flex-col gap-0.5 w-full">{oddL.map(pill)}</div> : <span className="text-[8px] select-none" style={{ color: '#1f3847' }}>üst</span>}
+                    </div>
+                    {evenL.length === 0 && oddL.length === 0 && <div className="absolute inset-0 z-0" onDragOver={e => onDragOver(e, 'full')} onDrop={e => onDropH(e, 'full')} onDragLeave={() => setHoverZone(null)} />}
+                </>}
+                {isUnavail && !isBlocked && <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none"><span className="text-[9px] px-2 py-0.5 rounded" style={{ color: '#2f536a', background: 'rgba(13,23,38,0.6)' }}>Mövcud deyil</span></div>}
+            </div>;
+        }
+
+        /* ══════════ MAIN APP ══════════ */
+        function App() {
+            const [teachers, setTeachers] = useState(INIT_TEACHERS);
+            const [lessons, setLessons] = useState(INIT_LESSONS);
+            const [selectedTeacherId, setSelectedTeacherId] = useState(1);
+            const [placements, setPlacements] = useState([]);
+            const [draggingLessonId, setDraggingLessonId] = useState(null);
+            const [notification, setNotification] = useState(null);
+            const [adminOpen, setAdminOpen] = useState(false);
+            const [sidebarOpen, setSidebarOpen] = useState(false);
+
+            const selectedTeacher = teachers.find(t => t.id === selectedTeacherId);
+            const placedIds = new Set(placements.map(p => p.lessonId));
+            const availableLessons = lessons.filter(l => l.teacherId === selectedTeacherId && !placedIds.has(l.id));
+            const notify = (msg, type = 'info') => { setNotification({ msg, type }); setTimeout(() => setNotification(null), 3000); };
+
+            const handleDrop = useCallback((lessonId, dayId, slotId) => {
+                const lesson = lessons.find(l => l.id === lessonId); if (!lesson) return;
+                const teacher = teachers.find(t => t.id === lesson.teacherId);
+                if (teacher?.blockedDays.includes(dayId)) { notify(`${teacher.name} bu gün bloklıdır!`, 'error'); return; }
+                if (teacher && !isTeacherAvailable(teacher, dayId, slotId)) { notify(`${teacher.name} bu saatda mövcud deyil!`, 'error'); return; }
+                const tc = placements.filter(p => { if (p.dayId !== dayId || p.slotId !== slotId) return false; const pl = lessons.find(l => l.id === p.lessonId); return pl && pl.teacherId === lesson.teacherId && parityConflicts(pl.parity, lesson.parity); });
+                if (tc.length > 0) { notify('Müəllim bu slotda məşğuldur!', 'error'); return; }
+                const gc = placements.filter(p => { if (p.dayId !== dayId || p.slotId !== slotId) return false; const pl = lessons.find(l => l.id === p.lessonId); return pl && pl.group === lesson.group && parityConflicts(pl.parity, lesson.parity); });
+                if (gc.length > 0) { notify(`${lesson.group} qrupunun dərsi var!`, 'error'); return; }
+                setPlacements(prev => [...prev, { lessonId, dayId, slotId, parity: lesson.parity }]);
+                notify(`${lesson.subject} yerləşdirildi ✓`, 'success');
+            }, [placements, lessons, teachers]);
+            const handleRemove = useCallback(id => setPlacements(prev => prev.filter(p => p.lessonId !== id)), []);
+            useEffect(() => { const h = () => setDraggingLessonId(null); document.addEventListener('dragend', h); return () => document.removeEventListener('dragend', h); }, []);
+            useEffect(() => { if (!teachers.find(t => t.id === selectedTeacherId) && teachers.length > 0) setSelectedTeacherId(teachers[0].id); }, [teachers, selectedTeacherId]);
+
+            const stats = { total: lessons.filter(l => l.teacherId === selectedTeacherId).length, placed: placements.filter(p => { const l = lessons.find(x => x.id === p.lessonId); return l && l.teacherId === selectedTeacherId; }).length };
+
+            return <div className="min-h-screen flex flex-col" style={{ background: '#09101b' }}>
+                {notification && <Toast msg={notification.msg} type={notification.type} />}
+                <AdminPanel open={adminOpen} onClose={() => setAdminOpen(false)} teachers={teachers} setTeachers={setTeachers} lessons={lessons} setLessons={setLessons} placements={placements} setPlacements={setPlacements} />
+
+                {/* HEADER */}
+                <header style={{ borderBottom: '1px solid rgba(113,162,193,0.1)', background: 'rgba(13,23,38,0.85)', backdropFilter: 'blur(20px)' }}>
+                    <div className="max-w-[1600px] mx-auto flex items-center justify-between px-4 py-3 sm:px-6">
+                        <div className="flex items-center gap-3">
+                            {/* Mobile menu btn */}
+                            <button className="sm:hidden w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'rgba(78,139,177,0.1)' }} onClick={() => setSidebarOpen(true)}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#71a2c1" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+                            </button>
+                            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#4e8bb1,#4075bf)' }}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                            </div>
+                            <div className="hidden sm:block">
+                                <h1 className="text-lg font-bold" style={{ background: 'linear-gradient(90deg,#d9e3f2,#95b9d0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Ağıllı Dərs Cədvəli</h1>
+                                <p className="text-[11px]" style={{ color: '#2f536a' }}>Drag & Drop ilə interaktiv redaktor</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-3">
+                            <div className="text-right mr-1 sm:mr-2">
+                                <p className="text-[10px] sm:text-xs" style={{ color: '#71a2c1' }}>Yerləşdirilən</p>
+                                <p className="text-base sm:text-lg font-bold">{placements.length}<span className="text-sm" style={{ color: '#2f536a' }}>/{lessons.length}</span></p>
+                            </div>
+                            <button className="px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition flex items-center gap-1.5"
+                                style={{ background: 'rgba(78,139,177,0.1)', border: '1px solid rgba(78,139,177,0.15)', color: '#71a2c1' }} onClick={() => setAdminOpen(true)}>
+                                <span>⚙️</span><span className="hidden sm:inline">Admin Panel</span>
+                            </button>
+                            <button className="px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition"
+                                style={{ background: 'rgba(227,28,45,0.08)', border: '1px solid rgba(233,73,87,0.15)', color: '#ee7781' }}
+                                onClick={() => { setPlacements([]); notify('Cədvəl sıfırlandı', 'info'); }}>Sıfırla</button>
+                        </div>
+                    </div>
+                </header>
+
+                <div className="flex-1 flex max-w-[1600px] mx-auto w-full relative">
+                    {/* Mobile sidebar overlay */}
+                    <div className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => setSidebarOpen(false)} />
+
+                    {/* SIDEBAR */}
+                    <aside className={`app-sidebar ${sidebarOpen ? 'open' : ''} w-[280px] flex flex-col`} style={{ borderRight: '1px solid rgba(113,162,193,0.05)', background: 'rgba(13,23,38,0.95)' }}>
+                        {/* Mobile close */}
+                        <div className="sm:hidden flex justify-end p-3"><button className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(113,162,193,0.08)', color: '#71a2c1' }} onClick={() => setSidebarOpen(false)}>✕</button></div>
+
+                        <div className="p-4" style={{ borderBottom: '1px solid rgba(113,162,193,0.05)' }}>
+                            <div className="flex items-center justify-between mb-3">
+                                <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#2f536a' }}>Müəllimlər</h2>
+                                <button className="text-[10px] transition" style={{ color: '#4e8bb1' }} onClick={() => setAdminOpen(true)}>+ Əlavə et</button>
+                            </div>
+                            <div className="flex flex-col gap-1.5">{teachers.map(t => {
+                                const isA = t.id === selectedTeacherId;
+                                const tP = placements.filter(p => { const l = lessons.find(x => x.id === p.lessonId); return l && l.teacherId === t.id; }).length;
+                                const tT = lessons.filter(l => l.teacherId === t.id).length;
+                                return <button key={t.id} onClick={() => { setSelectedTeacherId(t.id); setSidebarOpen(false); }}
+                                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all ${isA ? 'teacher-active' : ''}`}
+                                    style={isA ? { background: 'rgba(78,139,177,0.12)' } : { background: 'transparent' }}>
+                                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold" style={{ background: t.color + '25', color: t.color }}>{t.name.charAt(0)}</div>
+                                    <div className="flex-1 min-w-0"><p className="text-xs font-semibold truncate">{t.name}</p><p className="text-[10px]" style={{ color: '#2f536a' }}>{t.department}</p></div>
+                                    <span className="text-[10px] font-medium" style={{ color: '#2f536a' }}>{tP}/{tT}</span>
+                                </button>;
+                            })}</div>
+                        </div>
+
+                        {selectedTeacher && <div className="p-4" style={{ borderBottom: '1px solid rgba(113,162,193,0.05)' }}>
+                            <div className="rounded-lg p-3 space-y-2" style={{ background: 'rgba(25,47,77,0.4)' }}>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: selectedTeacher.color + '25' }}><span className="text-xs" style={{ color: selectedTeacher.color }}>ℹ</span></div>
+                                        <span className="text-xs font-semibold" style={{ color: '#95b9d0' }}>{selectedTeacher.name}</span>
+                                    </div>
+                                    <button className="text-[10px]" style={{ color: '#4e8bb1' }} onClick={() => setAdminOpen(true)}>Redaktə ✎</button>
+                                </div>
+                                <div className="text-[10px] space-y-1" style={{ color: '#71a2c1' }}>
+                                    <p><span style={{ color: '#2f536a' }}>Bloklanan: </span>{selectedTeacher.blockedDays.length > 0 ? selectedTeacher.blockedDays.map(d => DAYS[d].short).join(', ') : 'Yoxdur'}</p>
+                                    <p><span style={{ color: '#2f536a' }}>Saatlar: </span>{selectedTeacher.availableFrom ? `${selectedTeacher.availableFrom} – ${selectedTeacher.availableTo}` : 'Tam gün'}</p>
+                                </div>
+                                <div className="pt-1">
+                                    <div className="flex justify-between text-[10px] mb-1" style={{ color: '#2f536a' }}><span>Tərəqqi</span><span>{stats.placed}/{stats.total}</span></div>
+                                    <div className="h-1 rounded-full overflow-hidden" style={{ background: '#192f4d' }}><div className="h-full rounded-full transition-all duration-500" style={{ width: `${stats.total > 0 ? (stats.placed / stats.total) * 100 : 0}%`, background: selectedTeacher.color }} /></div>
+                                </div>
+                            </div>
+                        </div>}
+
+                        <div className="flex-1 overflow-y-auto p-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#2f536a' }}>Dərslər ({availableLessons.length})</h2>
+                                <button className="text-[10px]" style={{ color: '#4e8bb1' }} onClick={() => setAdminOpen(true)}>+ Yeni</button>
+                            </div>
+                            {availableLessons.length === 0
+                                ? <div className="text-center py-8"><p className="text-xs" style={{ color: '#2f536a' }}>Bütün dərslər yerləşdirilib ✓</p></div>
+                                : <div className="flex flex-col gap-2">{availableLessons.map(l => (
+                                    <div key={l.id} className="lesson-card group rounded-lg p-2.5"
+                                        draggable onDragStart={e => { e.dataTransfer.setData('lessonId', l.id); e.dataTransfer.effectAllowed = 'move'; setDraggingLessonId(l.id); }}
+                                        style={{ background: 'rgba(25,47,77,0.4)', border: '1px solid rgba(113,162,193,0.08)', borderLeftColor: teachers.find(t => t.id === l.teacherId)?.color || '#666', borderLeftWidth: '3px' }}>
+                                        <div className="flex items-center justify-between mb-1"><span className="font-semibold text-xs">{l.subject}</span><ParityBadge parity={l.parity} small /></div>
+                                        <div className="flex items-center gap-2 text-[10px]" style={{ color: '#2f536a' }}><span>{l.group}</span><span>•</span><span>{l.totalHours} saat</span></div>
+                                    </div>
+                                ))}</div>}
+                        </div>
+
+                        <div className="p-4" style={{ borderTop: '1px solid rgba(113,162,193,0.05)' }}>
+                            <h3 className="text-[10px] uppercase tracking-wider mb-2" style={{ color: '#1f3847' }}>Rəng İzahı</h3>
+                            <div className="space-y-1.5">
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded" style={{ background: 'rgba(45,6,9,0.4)', border: '1px solid rgba(233,73,87,0.15)' }} /><span className="text-[10px]" style={{ color: '#71a2c1' }}>Bloklanan gün</span></div>
+                                <div className="flex items-center gap-2"><ParityBadge parity="even" small /><span className="text-[10px]" style={{ color: '#71a2c1' }}>— üst yarı</span></div>
+                                <div className="flex items-center gap-2"><ParityBadge parity="odd" small /><span className="text-[10px]" style={{ color: '#71a2c1' }}>— alt yarı</span></div>
+                            </div>
+                        </div>
+                    </aside>
+
+                    {/* GRID */}
+                    <main className="grid-main flex-1 p-4 sm:p-6 overflow-auto">
+                        <div style={{ minWidth: '700px' }}>
+                            <div className="grid gap-1.5" style={{ gridTemplateColumns: '70px repeat(5,1fr)' }}>
+                                <div />
+                                {DAYS.map(day => {
+                                    const bl = selectedTeacher?.blockedDays.includes(day.id);
+                                    return <div key={day.id} className="text-center py-2 rounded-lg" style={{ background: bl ? 'rgba(227,28,45,0.06)' : 'rgba(25,47,77,0.4)' }}>
+                                        <p className="text-xs font-bold" style={{ color: bl ? '#ee7781' : '#d9e3f2' }}>{day.short}</p>
+                                        <p className="text-[10px]" style={{ color: '#2f536a' }}>{day.name}</p>
+                                    </div>;
+                                })}
+                            </div>
+                            <div className="mt-3 mb-1.5 flex items-center gap-2 px-1">
+                                <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(78,139,177,0.5)' }}>Səhər</span>
+                                <div className="flex-1 h-px" style={{ background: 'rgba(78,139,177,0.08)' }} />
+                            </div>
+                            {SLOTS.map((slot, idx) => <React.Fragment key={slot.id}>
+                                {idx === 3 && <div className="mt-3 mb-1.5 flex items-center gap-2 px-1"><span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'rgba(233,73,87,0.35)' }}>Günorta</span><div className="flex-1 h-px" style={{ background: 'rgba(233,73,87,0.06)' }} /></div>}
+                                <div className="grid gap-1.5 mb-1.5" style={{ gridTemplateColumns: '70px repeat(5,1fr)' }}>
+                                    <div className="flex flex-col items-center justify-center rounded-lg px-2 py-1" style={{ background: 'rgba(25,47,77,0.4)' }}>
+                                        <span className="text-sm font-bold">{slot.num}</span>
+                                        <span className="text-[9px] leading-tight text-center" style={{ color: '#2f536a' }}>{slot.time}</span>
+                                    </div>
+                                    {DAYS.map(day => <GridCell key={`${day.id}-${slot.id}`} dayId={day.id} slotId={slot.id}
+                                        selectedTeacher={selectedTeacher} placements={placements} draggingLessonId={draggingLessonId}
+                                        lessons={lessons} teachers={teachers} onDrop={handleDrop} onRemove={handleRemove} />)}
+                                </div>
+                            </React.Fragment>)}
+                        </div>
+                    </main>
+                </div>
+            </div>;
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+
+</html>
