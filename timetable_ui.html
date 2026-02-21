@@ -9,6 +9,10 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
         rel="stylesheet">
     <style>
@@ -325,6 +329,19 @@
             { id: 'L10', teacherId: 1, subject: 'Statistika', group: '700KM', parity: 'both', totalHours: 30 },
         ];
 
+        /* ══════════ FIREBASE INIT ══════════ */
+        const firebaseConfig = {
+            apiKey: "AIzaSyCKs9QPJMGpz4RRT6zoaMO2S92bhEw1ZVk",
+            authDomain: "cedvel.firebaseapp.com",
+            databaseURL: "https://cedvel-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "cedvel",
+            storageBucket: "cedvel.firebasestorage.app",
+            messagingSenderId: "717991510961",
+            appId: "1:717991510961:web:edccf25a5c0d7bd4233390"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         function timeToMin(t) { const [h, m] = t.split(':').map(Number); return h * 60 + m; }
         function isTeacherAvailable(teacher, dayId, slotId) {
             if (teacher.blockedDays.includes(dayId)) return false;
@@ -543,8 +560,38 @@
         function App() {
             const [teachers, setTeachers] = useState(INIT_TEACHERS);
             const [lessons, setLessons] = useState(INIT_LESSONS);
-            const [selectedTeacherId, setSelectedTeacherId] = useState(1);
             const [placements, setPlacements] = useState([]);
+            const [selectedTeacherId, setSelectedTeacherId] = useState(1);
+
+            const [isLoaded, setIsLoaded] = useState(false);
+            const skipNextUpload = useRef(false);
+
+            // Sync FROM Firebase
+            useEffect(() => {
+                const ref = db.ref('timetableData');
+                ref.on('value', snapshot => {
+                    const data = snapshot.val();
+                    if (data) {
+                        skipNextUpload.current = true;
+                        setTeachers(data.teachers || INIT_TEACHERS);
+                        setLessons(data.lessons || INIT_LESSONS);
+                        setPlacements(data.placements || []);
+                    }
+                    setIsLoaded(true);
+                });
+                return () => ref.off();
+            }, []);
+
+            // Sync TO Firebase
+            useEffect(() => {
+                if (!isLoaded) return;
+                if (skipNextUpload.current) {
+                    skipNextUpload.current = false;
+                    return;
+                }
+                db.ref('timetableData').set({ teachers, lessons, placements });
+            }, [teachers, lessons, placements, isLoaded]);
+
             const [draggingLessonId, setDraggingLessonId] = useState(null);
             const [notification, setNotification] = useState(null);
             const [adminOpen, setAdminOpen] = useState(false);
