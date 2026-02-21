@@ -350,8 +350,8 @@
             return sh * 60 + sm >= timeToMin(teacher.availableFrom) && eh * 60 + em <= timeToMin(teacher.availableTo);
         }
         function parityConflicts(p1, p2) { return p1 === 'both' || p2 === 'both' || p1 === p2; }
-        let _nextId = 100; function genId() { return 'L' + (++_nextId); }
-        let _nextTId = 10; function genTId() { return ++_nextTId; }
+        let _nextId = 100; function genId() { return 'L_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
+        let _nextTId = 10; function genTId() { return Date.now() + Math.floor(Math.random() * 100000); }
 
         /* ── Small Components ── */
         function ParityBadge({ parity, small = false }) {
@@ -389,7 +389,7 @@
 
         /* ── Teacher Form ── */
         function TeacherForm({ teacher, onSave, onClose }) {
-            const isEdit = !!teacher;
+            const isEdit = !!teacher?.id;
             const [name, setName] = useState(teacher?.name || '');
             const [dept, setDept] = useState(teacher?.department || '');
             const [color, setColor] = useState(teacher?.color || COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)]);
@@ -428,9 +428,9 @@
         }
 
         /* ── Lesson Form ── */
-        function LessonForm({ lesson, teachers, onSave, onClose }) {
+        function LessonForm({ lesson, teachers, onSave, onClose, initialTeacherId }) {
             const isEdit = !!lesson;
-            const [teacherId, setTeacherId] = useState(lesson?.teacherId || teachers[0]?.id || 0);
+            const [teacherId, setTeacherId] = useState(lesson?.teacherId || initialTeacherId || teachers[0]?.id || 0);
             const [subject, setSubject] = useState(lesson?.subject || '');
             const [group, setGroup] = useState(lesson?.group || '');
             const [parity, setParity] = useState(lesson?.parity || 'both');
@@ -456,11 +456,12 @@
         }
 
         /* ── Admin Panel ── */
-        function AdminPanel({ open, onClose, teachers, setTeachers, lessons, setLessons, placements, setPlacements }) {
-            const [tab, setTab] = useState('teachers');
+        function AdminPanel({ open, onClose, teachers, setTeachers, lessons, setLessons, placements, setPlacements, initialTab, initialTeacherId }) {
+            const [tab, setTab] = useState(initialTab || 'teachers');
             const [editTeacher, setEditTeacher] = useState(null);
             const [editLesson, setEditLesson] = useState(null);
             const [confirm, setConfirm] = useState(null);
+            useEffect(() => { if (open) setTab(initialTab || 'teachers'); }, [open, initialTab]);
             const handleSaveTeacher = (t) => { setTeachers(p => { const e = p.find(x => x.id === t.id); return e ? p.map(x => x.id === t.id ? t : x) : [...p, t] }); setEditTeacher(null); };
             const handleDeleteTeacher = (id) => { setConfirm({ msg: 'Bu müəllim və dərsləri silinəcək. Əminsiniz?', onYes: () => { setTeachers(p => p.filter(x => x.id !== id)); setLessons(p => p.filter(x => x.teacherId !== id)); setPlacements(p => p.filter(pl => { const l = lessons.find(x => x.id === pl.lessonId); return l && l.teacherId !== id; })); setConfirm(null); } }); };
             const handleSaveLesson = (l) => { setLessons(p => { const e = p.find(x => x.id === l.id); return e ? p.map(x => x.id === l.id ? l : x) : [...p, l] }); setEditLesson(null); };
@@ -494,7 +495,7 @@
                             </div>
                         </div>
                     })}{teachers.length === 0 && <p className="text-center py-8 text-sm" style={{ color: '#475569' }}>Heç bir müəllim yoxdur.</p>}</div></>}</div>}
-                {tab === 'lessons' && <div>{editLesson !== null ? <LessonForm lesson={editLesson.id ? editLesson : null} teachers={teachers} onSave={handleSaveLesson} onClose={() => setEditLesson(null)} /> : <>
+                {tab === 'lessons' && <div>{editLesson !== null ? <LessonForm lesson={editLesson.id ? editLesson : null} teachers={teachers} onSave={handleSaveLesson} onClose={() => setEditLesson(null)} initialTeacherId={initialTeacherId} /> : <>
                     <button className="mb-4 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2" style={{ background: '#4e8bb1', color: '#fff' }} onClick={() => setEditLesson({})}><span className="text-lg leading-none">+</span> Yeni Dərs</button>
                     <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">{lessons.map(l => {
                         const t = teachers.find(x => x.id === l.teacherId); const isP = placements.some(p => p.lessonId === l.id); return <div key={l.id} className="flex items-center gap-3 p-3 rounded-xl transition group" style={{ background: 'rgba(241,245,249,0.5)', border: '1px solid #e2e8f0' }}>
@@ -519,8 +520,8 @@
             const isBlocked = t ? (t.blockedDays || []).includes(dayId) : false;
             const isUnavail = t ? !isTeacherAvailable(t, dayId, slotId) : false;
             const isDisabled = isBlocked || isUnavail;
-            const evenL = placements.filter(p => p.dayId === dayId && p.slotId === slotId && (p.parity === 'even' || p.parity === 'both'));
-            const oddL = placements.filter(p => p.dayId === dayId && p.slotId === slotId && (p.parity === 'odd' || p.parity === 'both'));
+            const evenL = placements.filter(p => p.dayId === dayId && p.slotId === slotId && (p.parity === 'even' || p.parity === 'both') && lessons.find(l => l.id === p.lessonId)?.teacherId == selectedTeacher?.id);
+            const oddL = placements.filter(p => p.dayId === dayId && p.slotId === slotId && (p.parity === 'odd' || p.parity === 'both') && lessons.find(l => l.id === p.lessonId)?.teacherId == selectedTeacher?.id);
             const canDrop = useCallback(z => {
                 const dropId = draggingLessonId || selectedLessonToPlace;
                 if (!dropId || isDisabled) return false; const l = lessons.find(x => x.id === dropId); if (!l) return false;
@@ -603,11 +604,13 @@
             const [selectedLessonToPlace, setSelectedLessonToPlace] = useState(null);
             const [notification, setNotification] = useState(null);
             const [adminOpen, setAdminOpen] = useState(false);
+            const [adminTab, setAdminTab] = useState('teachers');
             const [sidebarOpen, setSidebarOpen] = useState(false);
+            const openAdmin = (tab) => { setAdminTab(tab || 'teachers'); setAdminOpen(true); };
 
             const selectedTeacher = teachers.find(t => t.id === selectedTeacherId);
             const placedIds = new Set(placements.map(p => p.lessonId));
-            const availableLessons = lessons.filter(l => l.teacherId === selectedTeacherId && !placedIds.has(l.id));
+            const availableLessons = lessons.filter(l => l.teacherId == selectedTeacherId && !placedIds.has(l.id));
             const notify = (msg, type = 'info') => { setNotification({ msg, type }); setTimeout(() => setNotification(null), 3000); };
 
             const handleDrop = useCallback((lessonId, dayId, slotId) => {
@@ -627,11 +630,11 @@
             useEffect(() => { const h = () => setDraggingLessonId(null); document.addEventListener('dragend', h); return () => document.removeEventListener('dragend', h); }, []);
             useEffect(() => { if (!teachers.find(t => t.id === selectedTeacherId) && teachers.length > 0) setSelectedTeacherId(teachers[0].id); }, [teachers, selectedTeacherId]);
 
-            const stats = { total: lessons.filter(l => l.teacherId === selectedTeacherId).length, placed: placements.filter(p => { const l = lessons.find(x => x.id === p.lessonId); return l && l.teacherId === selectedTeacherId; }).length };
+            const stats = { total: lessons.filter(l => l.teacherId == selectedTeacherId).length, placed: placements.filter(p => { const l = lessons.find(x => x.id === p.lessonId); return l && l.teacherId == selectedTeacherId; }).length };
 
             return <div className="min-h-screen flex flex-col" style={{ background: '#f8fafc' }}>
                 {notification && <Toast msg={notification.msg} type={notification.type} />}
-                <AdminPanel open={adminOpen} onClose={() => setAdminOpen(false)} teachers={teachers} setTeachers={setTeachers} lessons={lessons} setLessons={setLessons} placements={placements} setPlacements={setPlacements} />
+                <AdminPanel open={adminOpen} onClose={() => setAdminOpen(false)} teachers={teachers} setTeachers={setTeachers} lessons={lessons} setLessons={setLessons} placements={placements} setPlacements={setPlacements} initialTab={adminTab} initialTeacherId={selectedTeacherId} />
 
                 {/* HEADER */}
                 <header style={{ borderBottom: '1px solid #e2e8f0', background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(20px)' }}>
@@ -655,7 +658,7 @@
                                 <p className="text-base sm:text-lg font-bold">{placements.length}<span className="text-sm" style={{ color: '#475569' }}>/{lessons.length}</span></p>
                             </div>
                             <button className="px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-semibold transition flex items-center gap-1.5"
-                                style={{ background: 'rgba(78,139,177,0.1)', border: '1px solid rgba(78,139,177,0.15)', color: '#475569' }} onClick={() => setAdminOpen(true)}>
+                                style={{ background: 'rgba(78,139,177,0.1)', border: '1px solid rgba(78,139,177,0.15)', color: '#475569' }} onClick={() => openAdmin('teachers')}>
                                 <span>⚙️</span><span className="hidden sm:inline">Admin Panel</span>
                             </button>
                             <button className="px-2 sm:px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition"
@@ -677,12 +680,12 @@
                         <div className="p-4" style={{ borderBottom: '1px solid #e2e8f0' }}>
                             <div className="flex items-center justify-between mb-3">
                                 <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#475569' }}>Müəllimlər</h2>
-                                <button className="text-[10px] transition" style={{ color: '#4e8bb1' }} onClick={() => setAdminOpen(true)}>+ Əlavə et</button>
+                                <button className="text-[10px] transition" style={{ color: '#4e8bb1' }} onClick={() => openAdmin('teachers')}>+ Əlavə et</button>
                             </div>
                             <div className="flex flex-col gap-1.5">{teachers.map(t => {
                                 const isA = t.id === selectedTeacherId;
-                                const tP = placements.filter(p => { const l = lessons.find(x => x.id === p.lessonId); return l && l.teacherId === t.id; }).length;
-                                const tT = lessons.filter(l => l.teacherId === t.id).length;
+                                const tP = placements.filter(p => { const l = lessons.find(x => x.id === p.lessonId); return l && l.teacherId == t.id; }).length;
+                                const tT = lessons.filter(l => l.teacherId == t.id).length;
                                 return <button key={t.id} onClick={() => { setSelectedTeacherId(t.id); setSidebarOpen(false); }}
                                     className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all ${isA ? 'teacher-active' : ''}`}
                                     style={isA ? { background: 'rgba(78,139,177,0.12)' } : { background: 'transparent' }}>
@@ -700,7 +703,7 @@
                                         <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: selectedTeacher.color + '25' }}><span className="text-xs" style={{ color: selectedTeacher.color }}>ℹ</span></div>
                                         <span className="text-xs font-semibold" style={{ color: '#475569' }}>{selectedTeacher.name}</span>
                                     </div>
-                                    <button className="text-[10px]" style={{ color: '#4e8bb1' }} onClick={() => setAdminOpen(true)}>Redaktə ✎</button>
+                                    <button className="text-[10px]" style={{ color: '#4e8bb1' }} onClick={() => openAdmin('teachers')}>Redaktə ✎</button>
                                 </div>
                                 <div className="text-[10px] space-y-1" style={{ color: '#475569' }}>
                                     <p><span style={{ color: '#475569' }}>Bloklanan: </span>{(selectedTeacher.blockedDays || []).length > 0 ? (selectedTeacher.blockedDays || []).map(d => DAYS[d].short).join(', ') : 'Yoxdur'}</p>
@@ -716,7 +719,7 @@
                         <div className="flex-1 overflow-y-auto p-4">
                             <div className="flex items-center justify-between mb-3">
                                 <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#475569' }}>Dərslər ({availableLessons.length})</h2>
-                                <button className="text-[10px]" style={{ color: '#4e8bb1' }} onClick={() => setAdminOpen(true)}>+ Yeni</button>
+                                <button className="text-[10px]" style={{ color: '#4e8bb1' }} onClick={() => openAdmin('lessons')}>+ Yeni</button>
                             </div>
                             {availableLessons.length === 0
                                 ? <div className="text-center py-8"><p className="text-xs" style={{ color: '#475569' }}>Bütün dərslər yerləşdirilib ✓</p></div>
