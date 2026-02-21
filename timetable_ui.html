@@ -344,7 +344,7 @@
 
         function timeToMin(t) { const [h, m] = t.split(':').map(Number); return h * 60 + m; }
         function isTeacherAvailable(teacher, dayId, slotId) {
-            if (teacher.blockedDays.includes(dayId)) return false;
+            if ((teacher.blockedDays || []).includes(dayId)) return false;
             if (!teacher.availableFrom || !teacher.availableTo) return true;
             const s = SLOTS[slotId], [sh, sm] = s.time.split(' – ')[0].split(':').map(Number), [eh, em] = s.time.split(' – ')[1].split(':').map(Number);
             return sh * 60 + sm >= timeToMin(teacher.availableFrom) && eh * 60 + em <= timeToMin(teacher.availableTo);
@@ -486,7 +486,7 @@
                         const tC = lessons.filter(l => l.teacherId === t.id).length; return <div key={t.id} className="flex items-center gap-3 p-3 rounded-xl transition group" style={{ background: 'rgba(241,245,249,0.5)', border: '1px solid #e2e8f0' }}>
                             <div className="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold shrink-0" style={{ background: t.color + '25', color: t.color }}>{t.name.charAt(0)}</div>
                             <div className="flex-1 min-w-0"><p className="text-sm font-semibold">{t.name}</p>
-                                <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] mt-0.5" style={{ color: '#475569' }}><span>{t.department || '—'}</span><span>•</span><span>Bloklı: {t.blockedDays.length > 0 ? t.blockedDays.map(d => DAYS[d].short).join(', ') : 'Yox'}</span><span>•</span><span>{tC} dərs</span></div>
+                                <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] mt-0.5" style={{ color: '#475569' }}><span>{t.department || '—'}</span><span>•</span><span>Bloklı: {(t.blockedDays || []).length > 0 ? (t.blockedDays || []).map(d => DAYS[d].short).join(', ') : 'Yox'}</span><span>•</span><span>{tC} dərs</span></div>
                             </div>
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
                                 <button className="w-7 h-7 rounded-lg flex items-center justify-center text-xs transition" style={{ background: 'rgba(78,139,177,0.15)', color: '#475569' }} onClick={() => setEditTeacher(t)}>✎</button>
@@ -516,7 +516,7 @@
         function GridCell({ dayId, slotId, selectedTeacher, placements, draggingLessonId, selectedLessonToPlace, lessons, teachers, onDrop, onRemove }) {
             const [hoverZone, setHoverZone] = useState(null);
             const t = selectedTeacher;
-            const isBlocked = t ? t.blockedDays.includes(dayId) : false;
+            const isBlocked = t ? (t.blockedDays || []).includes(dayId) : false;
             const isUnavail = t ? !isTeacherAvailable(t, dayId, slotId) : false;
             const isDisabled = isBlocked || isUnavail;
             const evenL = placements.filter(p => p.dayId === dayId && p.slotId === slotId && (p.parity === 'even' || p.parity === 'both'));
@@ -613,7 +613,7 @@
             const handleDrop = useCallback((lessonId, dayId, slotId) => {
                 const lesson = lessons.find(l => l.id === lessonId); if (!lesson) return;
                 const teacher = teachers.find(t => t.id === lesson.teacherId);
-                if (teacher?.blockedDays.includes(dayId)) { notify(`${teacher.name} bu gün bloklıdır!`, 'error'); return; }
+                if ((teacher?.blockedDays || []).includes(dayId)) { notify(`${teacher.name} bu gün bloklıdır!`, 'error'); return; }
                 if (teacher && !isTeacherAvailable(teacher, dayId, slotId)) { notify(`${teacher.name} bu saatda mövcud deyil!`, 'error'); return; }
                 const tc = placements.filter(p => { if (p.dayId !== dayId || p.slotId !== slotId) return false; const pl = lessons.find(l => l.id === p.lessonId); return pl && pl.teacherId === lesson.teacherId && parityConflicts(pl.parity, lesson.parity); });
                 if (tc.length > 0) { notify('Müəllim bu slotda məşğuldur!', 'error'); return; }
@@ -703,7 +703,7 @@
                                     <button className="text-[10px]" style={{ color: '#4e8bb1' }} onClick={() => setAdminOpen(true)}>Redaktə ✎</button>
                                 </div>
                                 <div className="text-[10px] space-y-1" style={{ color: '#475569' }}>
-                                    <p><span style={{ color: '#475569' }}>Bloklanan: </span>{selectedTeacher.blockedDays.length > 0 ? selectedTeacher.blockedDays.map(d => DAYS[d].short).join(', ') : 'Yoxdur'}</p>
+                                    <p><span style={{ color: '#475569' }}>Bloklanan: </span>{(selectedTeacher.blockedDays || []).length > 0 ? (selectedTeacher.blockedDays || []).map(d => DAYS[d].short).join(', ') : 'Yoxdur'}</p>
                                     <p><span style={{ color: '#475569' }}>Saatlar: </span>{selectedTeacher.availableFrom ? `${selectedTeacher.availableFrom} – ${selectedTeacher.availableTo}` : 'Tam gün'}</p>
                                 </div>
                                 <div className="pt-1">
@@ -747,7 +747,7 @@
                             <div className="grid gap-1.5" style={{ gridTemplateColumns: '70px repeat(5,1fr)' }}>
                                 <div />
                                 {DAYS.map(day => {
-                                    const bl = selectedTeacher?.blockedDays.includes(day.id);
+                                    const bl = (selectedTeacher?.blockedDays || []).includes(day.id);
                                     return <div key={day.id} className="text-center py-2 rounded-lg" style={{ background: bl ? '#fef2f2' : '#ffffff' }}>
                                         <p className="text-xs font-bold" style={{ color: bl ? '#ee7781' : '#0f172a' }}>{day.short}</p>
                                         <p className="text-[10px]" style={{ color: '#475569' }}>{day.name}</p>
